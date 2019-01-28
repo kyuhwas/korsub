@@ -158,10 +158,13 @@ class TrainCorpus:
                         sent = []
                         continue
 
-                    cols = doc.split('\t')
-                    eojeol = cols[0]
-                    morphtags = cols[self._col]
-                    sent.append((normalize(eojeol), parse(morphtags)))
+                    try:
+                        cols = doc.split('\t')
+                        eojeol = cols[0]
+                        morphtags = cols[self._col]
+                        sent.append((normalize(eojeol), parse(morphtags)))
+                    except:
+                        continue
 
                 if sent:
                     yield sent
