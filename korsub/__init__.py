@@ -6,4 +6,4 @@ from .math import train_svd
 from .utils import get_process_memory
 from .utils import most_similar
 from .utils import Sentences
-frin .utils import TrainCorpus
+from .utils import TrainCorpus

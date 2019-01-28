@@ -121,8 +121,10 @@ class TrainCorpus:
 
     """
 
-    def __init__(self, path, xsv_as_adj=False, num_sent=-1):
-        self.path = path
+    def __init__(self, paths, xsv_as_adj=False, num_sent=-1):
+        if isinstance(paths, str):
+            paths = [paths]
+        self.paths = paths
         self.xsv_as_adj = xsv_as_adj
         self._col = 2 if xsv_as_adj else 3
         self.num_sent = num_sent
@@ -141,25 +143,25 @@ class TrainCorpus:
             pattern = re.compile('[^가-힣]')
             return pattern.sub('', s)
 
-        with open(self.path, encoding='utf-8') as f:
-            sent = []
-            n_sents = 0
-            for doc in f:
+        sent = []
+        n_sents = 0
+        for path in self.paths:
+            with open(path, encoding='utf-8') as f:
+                for doc in f:
+                    if self.num_sent > 0 and n_sents >= self.num_sent:
+                        break
+                    doc = doc.strip()
 
-                if self.num_sent > 0 and n_sents >= self.num_sent:
-                    break
-                doc = doc.strip()
+                    if not doc:
+                        yield sent
+                        n_sents += 1
+                        sent = []
+                        continue
 
-                if not doc:
+                    cols = doc.split('\t')
+                    eojeol = cols[0]
+                    morphtags = cols[self._col]
+                    sent.append((normalize(eojeol), parse(morphtags)))
+
+                if sent:
                     yield sent
-                    n_sents += 1
-                    sent = []
-                    continue
-
-                cols = doc.split('\t')
-                eojeol = cols[0]
-                morphtags = cols[self._col]
-                sent.append((normalize(eojeol), parse(morphtags)))
-
-            if sent:
-                yield sent
