@@ -1,4 +1,4 @@
-from tagged_corpus import train_lr2vec
+from .tagged_corpus.train import train_lr2vec
 
 class LR2Vec:
     def __init__(self, lr_corpus=None, vocab_min_count=20, feature_min_count=5,
