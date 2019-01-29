@@ -1,5 +1,5 @@
 from collections import defaultdict
-from .utils import get_process_memory
+from ..utils import get_process_memory
 
 def scan_subwords(sentences, submax=5, min_count=10,
     prune_per_sent=2000000, prune_min_count=2, verbose=True):
