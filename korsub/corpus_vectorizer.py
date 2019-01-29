@@ -148,3 +148,50 @@ def lr_sents_to_features(lrs, lsubs, rsubs, check=False):
             word_and_features.append(((r, 'R'), r_features))
 
     return word_and_features
+
+def scan_features(lr_format_sents, lsubs, rsubs, min_count=5):
+    counter = defaultdict(int)
+    for i, lrs in enumerate(lr_format_sents):
+        if i % 10000 == 0:
+            print('\rscanning features from {} sents'.format(i), end='')
+        word_and_features = lr_sents_to_features(
+            lrs, lsubs, rsubs, check=True)
+        for _, features in word_and_features:
+            for feature in features:
+                counter[feature] += 1
+    idx_to_feature = [f for f,c in sorted(counter.items(), key=lambda x:-x[1]) if c >= min_count]
+    feature_to_idx = {f:idx for idx, f in enumerate(idx_to_feature)}
+    print('\rscanning features from {} sents was done'.format(i))
+    return idx_to_feature, feature_to_idx
+
+def prune(C, min_count):
+    C = {k1:{k2:v for k2, v in d.items() if v >= min_count} for k1, d in C.items()}
+    C = {k1:defaultdict(int, d) for k1, d in C.items() if d}
+    C = defaultdict(lambda: defaultdict(int), C)
+    return C
+
+def count_word_features(lr_format_sents, sub_dic, feature_dic,
+    min_count=2, prune_per_sent=100000, prune_min_count=2):
+
+    C = defaultdict(lambda: defaultdict(int))
+
+    for i, lrs in enumerate(lr_format_sents):
+        if i % 10000 == 0:
+            print('\rcounting (word, features) from {} sents'.format(i), end='')
+        if i % prune_per_sent == 0:
+            C = prune(C, prune_min_count)
+
+        word_and_features = lr_sents_to_features(
+            lrs, sub_dic, sub_dic, check=True)
+
+        for word, features in word_and_features:
+            for feature in features:
+                if not (feature in feature_dic):
+                    continue
+                C[word][feature] += 1
+
+    print('\rcounting (word, features) from {} sents was done'.format(i))
+
+    C = prune(C, min_count)
+    C = {w:dict(fd) for w, fd in C.items() if fd}
+    return C
