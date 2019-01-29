@@ -53,3 +53,98 @@ def scan_subwords(lr_format_sents, min_count=10):
     r_to_idx = {r:idx for idx, r in enumerate(idx_to_r)}
 
     return idx_to_l, l_to_idx, lsubs, idx_to_r, r_to_idx, rsubs
+
+def lr_sents_to_features(lrs, lsubs, rsubs, check=False):
+    """
+    Arguments
+    ---------
+    lrs : list of tuple
+        For example,
+
+            lrs = [
+                ('컬렉션', '이라는'),
+                ('이름', '으로'),
+                ('전시회', '를'),
+                ('열', '었다')
+            ]
+
+    lsubs : set or dict of str
+        Dictionary of L subwords
+    rsubs : set or dict of str
+        Dictionary of R subwords
+    check : Boolean
+        If True, use only known (included in lsubs or rsubs) subwords
+
+    Returns
+    -------
+    list of tuple, (word, features)
+
+    Usage
+    -----
+
+        word_and_features = lr_sents_to_features(
+            lrs[-4:], lsubs=None, rsubs=None, check=False)
+
+        for word, features in word_and_features:
+            print('word = {}, features = {}'.format(word, features))
+
+        $ word = ('컬렉션', 'L'), features = {('이라는이름으로', 1), ('이라는이름', 1), ('이라는', 1)}
+          word = ('이라는', 'R'), features = {('이름으로', 1), ('이름', 1), ('컬렉션', -1)}
+          word = ('이름', 'L'), features = {('으로전시회를', 1), ('으로전시회', 1), ('으로', 1), ('이라는', -1), ('컬렉션이라는', -1)}
+          word = ('으로', 'R'), features = {('컬렉션이라는이름', -1), ('이름', -1), ('이라는이름', -1), ('전시회를', 1), ('전시회', 1)}
+          word = ('전시회', 'L'), features = {('으로', -1), ('이름으로', -1), ('를열었다', 1), ('를', 1), ('를열', 1)}
+          word = ('를', 'R'), features = {('으로전시회', -1), ('이름으로전시회', -1), ('열었다', 1), ('전시회', -1), ('열', 1)}
+          word = ('열', 'L'), features = {('었다', 1), ('전시회를', -1), ('를', -1)}
+          word = ('었다', 'R'), features = {('전시회를열', -1), ('를열', -1), ('열', -1)}
+    """
+    word_and_features = []
+
+    max_i = len(lrs) - 1
+    for i, (l, r) in enumerate(lrs):
+        if i == 0:
+            ll, lr = '', ''
+        else:
+            ll, lr = lrs[i-1][0], lrs[i-1][1]
+        if i == max_i:
+            rl, rr = '', ''
+        else:
+            rl, rr = lrs[i+1][0], lrs[i+1][1]
+
+        if check:
+            if not (ll in lsubs):
+                ll = ''
+            if not (lr in rsubs):
+                lr = ''
+            if not (rl in lsubs):
+                rl = ''
+            if not (rr in rsubs):
+                rr = ''
+
+        # features of L
+        l_features = set()
+        if i > 0:
+            l_features.update({(sub, -1) for sub in [lr, ll+lr] if sub})
+        if i == max_i and r:
+            l_features.add((r, 1))
+        else:
+            l_features.update({(sub, 1) for sub in [r, r+rl, r+rl+rr] if sub})
+
+        if l_features:
+            word_and_features.append(((l, 'L'), l_features))
+
+        if not r:
+            continue
+
+        # features of R
+        r_features = set()
+        if i == 0:
+            r_features.add((l, -1))
+        else:
+            r_features.update({(sub, -1) for sub in [l, lr+l, ll+lr+l] if sub})
+        if i < max_i:
+            r_features.update({(sub, 1) for sub in [rl, rl+rr] if sub})
+
+        if r_features:
+            word_and_features.append(((r, 'R'), r_features))
+
+    return word_and_features
