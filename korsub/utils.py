@@ -2,6 +2,7 @@ import os
 import re
 import psutil
 from sklearn.metrics import pairwise_distances
+from scipy.sparse import csr_matrix
 
 
 def most_similar(query, wv, vocab_to_idx, idx_to_vocab, topk=10):
@@ -168,3 +169,27 @@ class TrainCorpus:
 
                 if sent:
                     yield sent
+
+def c_to_x(C):
+    row_counter = {}
+    col_counter = defaultdict(int)
+    for r, d in C.items():
+        row_counter[r] = sum(d.values())
+        for c, v in d.items():
+            col_counter[c] += v
+    idx_to_row = [r for r in sorted(row_counter, key=lambda x:-row_counter[x])]
+    idx_to_col = [c for c in sorted(col_counter, key=lambda x:-col_counter[x])]
+    row_to_idx = {r:idx for idx, r in enumerate(idx_to_row)}
+    col_to_idx = {c:idx for idx, c in enumerate(idx_to_col)}
+
+    rows, cols, data = [], [], []
+    for r, d in C.items():
+        i = row_to_idx[r]
+        for c, v in d.items():
+            j = col_to_idx[c]
+            rows.append(i)
+            cols.append(j)
+            data.append(v)
+
+    X = csr_matrix((data, (rows, cols)))
+    return X, idx_to_row, idx_to_col
