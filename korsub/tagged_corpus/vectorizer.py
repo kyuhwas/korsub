@@ -151,6 +151,7 @@ def lr_sents_to_features(lrs, lsubs, rsubs, check=False):
 
 def scan_features(lr_format_sents, lsubs, rsubs, min_count=5):
     counter = defaultdict(int)
+    i = 0
     for i, lrs in enumerate(lr_format_sents):
         if i % 10000 == 0:
             print('\rscanning features from {} sents'.format(i), end='')
