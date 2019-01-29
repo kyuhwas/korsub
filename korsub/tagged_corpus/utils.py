@@ -9,14 +9,16 @@ def to_lrs(eojeols, morphtags):
         lrs.append((l, r))
     return lrs
 
-def decorate_four_column_to_lr_sent(corpus):
-    for sent in corpus:
-        if not sent:
-            continue
-        eojeols, morphtags = zip(*sent)
-        lrs = to_lrs(eojeols, morphtags)
-        yield lrs
-
+class FourColumnLRCorpusDecorator:
+    def __init__(self, corpus):
+        self.corpus = corpus
+    def __iter__(self):
+        for sent in self.corpus:
+            if not sent:
+                continue
+            eojeols, morphtags = zip(*sent)
+            lrs = to_lrs(eojeols, morphtags)
+            yield lrs
 
 class FourColumnCorpus:
     """
